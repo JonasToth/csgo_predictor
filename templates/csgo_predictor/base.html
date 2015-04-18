@@ -1,0 +1,28 @@
+{% comment %}
+This Template is generate by the generate_app.py script.
+It is included, therefore it doesn't extend anything.
+Extend it for your own needs.
+{% endcomment %}
+{% extends 'app_base.html' %}
+{% load raspberry_design %}
+
+{% block additional_css %}
+	{{ block.super }}
+	<link rel="stylesheet" type="text/css" href="/static/webradio/stylesheet/application.css" />
+{% endblock %}
+
+{% block additional_js %}
+	{{ block.super }}
+	<script src="/static/webradio/javascript/application.js"></script>
+{% endblock %}
+
+{% block app_navi %}
+	{% comment %}
+		Insert your own List of Links to your sites, like:
+		<li><a href="{% url 'csgo_predictor.views.index' %}">Home</a></li>
+	{% endcomment %}
+{% endblock %}
+
+{% block app_content %}
+
+{% endblock %}
