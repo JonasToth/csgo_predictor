@@ -5,12 +5,15 @@
 # parse it and print it on stdout as csv
 
 base_url="http://www.hltv.org/?pageid=188&offset="
+# fetch the last 150 matches, this script should be called at least on a daily base
+# so this will cover all new matches
 data_offset=0
-max_offset=7000
+max_offset=150
 
 current_date=$(date +%s)
 last_file=$(ls -CF *.csv)
 result_file="hltv_$current_date.csv"
+new_matches_file="new_matches_$current_date.csv"
 
 # class="covMainBoxContent" is the parent container for the relevant data
 # start in line 635
@@ -30,7 +33,6 @@ do
 	# get every not needed div out of there
 	# erase all tabulators
 	#clear_divs=$(echo "$crop" | sed -e '{/<div style="clear:both\;"><\/div>/d;/<div style="width:606px\;height:22px\;background-color:white">/d;/<div style="padding-left:5px\;padding-top:5px\;">/d;/<div style="clear:both\;height:2px\;"><\/div>/d;/<div style="width:606px\;height:22px\;background-color:#E6E5E5">/d;/<\/div>.$/d;s/\t//g;}')
-
 
 	clear_tags=$(echo "$crop" | sed -e 's/<[^>]*>//g')
 	#echo "$clear_tags"
@@ -106,18 +108,18 @@ do
 	(( data_offset = data_offset + 50))
 done
 
-rm -f "$extracted_tmp"
-rm -f "$tmp_file"
-
 # do a diff on the new file with an old one
 # print out the diff
 # the diff will be all new stuff :)
+new_stuff=$(diff "$result_file" "$last_file" | sed 's/^< //g' | sed '/^> /d' | sed -e '/^\w\w*,\w\w*$/d')
+#new_stuff=$(diff "$result_file" "$last_file" | sed -e '/^\w\w*,\w\w*$/d')
 
-new_stuff=$(diff "$result_file" "$last_file" | sed 's/^< //g' | sed '/^> /d')
+rm -f "$extracted_tmp"
+rm -f "$tmp_file"
+rm -f "$last_file"
 
+#echo "$new_stuff" > "$new_matches_file"
 echo "$new_stuff"
-
-#rm "$last_file"
 
 exit 0
 
