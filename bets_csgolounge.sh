@@ -10,7 +10,7 @@ trim() {
     echo -n "$var"
 }
 
-debug=false
+debug=true
 base_url="http://csgolounge.com"
 
 # get the html yeah
@@ -30,7 +30,7 @@ strip_html=$(echo "$strip_span" | sed -e 's/<[^>]*>//g')
 strip_whitespace=$(echo "$strip_html" | sed -r -e 's/^\s+//g' | sed -r -e '/^\s*$/d' | sed -e '/vs/d')
 # debugging output
 #echo "$strip_whitespace"
-
+#exit 0
 # process the bets
 # output til here is something like this:
 # 2 hours ago LIVE
@@ -69,6 +69,13 @@ do
 		echo The Line: "$line"
 	fi
 	
+	# its a time line
+	# set the counter to the correct value, so the script doesnt mess up completly if something changes slidly?
+	if [ "$line" == *"now"* ] || [ "$line" == *"ago"* ]
+	then
+		(( counter=0 ))
+	fi
+
 	if [ "$counter" -eq 0 ]
 	then
 		time="$line"
