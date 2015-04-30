@@ -1,10 +1,27 @@
 #!/bin/bash
 
 
+usage() {
+	echo "Help for the bash script for fetching matchdata from"
+	echo "hltv.org."
+	echo
+	echo "This script basically gets a given number of the latestet"
+	echo "matches, which will then be compared to a previous fetch"
+	echo "of that data. It prints the difference of these two data"
+	echo "sets(only new Matches)"
+	echo "It's intended use is for automating betting ;)"
+	echo
+	echo
+	echo "--start_offset 	Number of offset to begin with(default = 0)"
+	echo "--max_offset 		Number of maximum data (default = 100)"
+	echo "--debug			Goes into Debugmode, additional information given."
+	
+}
+
 # this script will aggregate data from http://www.hltv.org/?pageid=188&gameid=2
 # parse it and print it on stdout as csv
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-
+DEBUG=false
 
 base_url="http://www.hltv.org/?pageid=188&offset="
 # fetch the last 150 matches, this script should be called at least on a daily base
@@ -13,9 +30,34 @@ data_offset=0
 max_offset=100
 
 current_date=$(date +%s)
-last_file=$(ls -CF *.csv)
+# list file line by line
+last_file=$(ls -1 *.csv)
 result_file="$DIR/hltv_$current_date.csv"
 new_matches_file="$DIR/new_matches_$current_date.csv"
+
+# --------------------------------------------------------------------
+
+if [ "$DEBUG" = true ]
+then
+	echo "Parsing command line..."
+fi
+
+while [ -n "$1" ]
+do
+	if [ "$DEBUG" = true ]
+	then
+		echo "$1"
+	fi
+	[ "$1" = "--debug" ] && DEBUG=true && shift && continue
+	[ "$1" = "--start_offset" ] && data_offset="$2" && shift && shift && continue
+	[ "$1" = "--max_offset" ] && max_offset="$2" && shift && shift && continue
+
+done
+
+# initialisation end
+# --------------------------------------------------------------------
+
+
 
 # class="covMainBoxContent" is the parent container for the relevant data
 # start in line 635
@@ -114,8 +156,14 @@ done
 # do a diff on the new file with an old one
 # print out the diff
 # the diff will be all new stuff :)
-new_stuff=$(diff "$result_file" "$last_file" | sed 's/^< //g' | sed '/^> /d' | sed -e '/^\w\w*,\w\w*$/d')
-#new_stuff=$(diff "$result_file" "$last_file" | sed -e '/^\w\w*,\w\w*$/d')
+
+if [ -n "$last_file" ]
+then
+	new_stuff=$(diff "$result_file" "$last_file" | sed 's/^< //g' | sed '/^> /d' | sed -e '/^\w\w*,\w\w*$/d')
+	#new_stuff=$(diff "$result_file" "$last_file" | sed -e '/^\w\w*,\w\w*$/d')
+else
+	echo $(cat "$result_file")
+fi
 
 rm -f "$extracted_tmp"
 rm -f "$tmp_file"
@@ -125,5 +173,4 @@ rm -f "$last_file"
 echo "$new_stuff"
 
 exit 0
-
 
