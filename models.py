@@ -10,8 +10,8 @@ class Map (models.Model):
 
 class MapAdmin(admin.ModelAdmin):
 	list_display	= ("name", "ratio")	
-	search_fields 	= ("name", )
-	ordering		= ("name", )
+	search_fields 	= ("name",)
+	ordering		= ("name",)
 
 class Team(models.Model):
 	name		= models.CharField(max_length = 60)
@@ -22,8 +22,8 @@ class Team(models.Model):
 
 class TeamAdmin(admin.ModelAdmin):
 	list_display 	= ("name",)
-	search_fields 	= ("name", )
-	ordering		= ("name", )
+	search_fields 	= ("name",)
+	ordering		= ("name",)
 
 
 class Match(models.Model):
@@ -40,5 +40,5 @@ class Match(models.Model):
 class MatchAdmin(admin.ModelAdmin):
 	list_display 	= ("team1", "team2", "map", "score", "date")
 	search_fields 	= ("team1", "team2", "map", "date")
-	list_filter 	= ("date", )
-	ordering		= ("-date", )
+	list_filter 	= ("date",)
+	ordering		= ("-date",)
