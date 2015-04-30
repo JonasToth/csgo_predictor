@@ -3,17 +3,19 @@
 
 # this script will aggregate data from http://www.hltv.org/?pageid=188&gameid=2
 # parse it and print it on stdout as csv
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
 
 base_url="http://www.hltv.org/?pageid=188&offset="
 # fetch the last 150 matches, this script should be called at least on a daily base
 # so this will cover all new matches
 data_offset=0
-max_offset=1000
+max_offset=1500
 
 current_date=$(date +%s)
 last_file=$(ls -CF *.csv)
-result_file="hltv_$current_date.csv"
-new_matches_file="new_matches_$current_date.csv"
+result_file="$DIR/hltv_$current_date.csv"
+new_matches_file="$DIR/new_matches_$current_date.csv"
 
 # class="covMainBoxContent" is the parent container for the relevant data
 # start in line 635
@@ -22,7 +24,7 @@ new_matches_file="new_matches_$current_date.csv"
 while [ "$data_offset" -le "$max_offset" ]
 do
 	raw_html=$(curl -s -X GET "${base_url}${data_offset}")
-	tmp_file="tmp_raw.txt"
+	tmp_file="$DIR/tmp_raw.txt"
 
 	# temporary file for sed 
 	echo "$raw_html" > "$tmp_file"
@@ -40,7 +42,7 @@ do
 	# show only lines with a number (no empty lines)
 	clear_whitespace=$(echo "$clear_tags" | sed -e 's/\t//g' | sed -n -e '/[0-9]/p')
 
-	extracted_tmp="tmp_extracted.txt"
+	extracted_tmp="$DIR/tmp_extracted.txt"
 	#echo "$clear_whitespace"
 	echo "$clear_whitespace" > "$extracted_tmp"
 

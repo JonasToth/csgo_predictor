@@ -60,7 +60,7 @@ def fetch(request):
 		result.append(int(r[1]))
 		
 		if DEBUG:
-			print time_
+			print time
 			print team1
 			print team2
 			print map
