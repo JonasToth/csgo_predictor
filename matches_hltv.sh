@@ -8,7 +8,7 @@ base_url="http://www.hltv.org/?pageid=188&offset="
 # fetch the last 150 matches, this script should be called at least on a daily base
 # so this will cover all new matches
 data_offset=0
-max_offset=150
+max_offset=1000
 
 current_date=$(date +%s)
 last_file=$(ls -CF *.csv)
@@ -108,10 +108,11 @@ do
 	(( data_offset = data_offset + 50))
 done
 
+cat "$result_file"
 # do a diff on the new file with an old one
 # print out the diff
 # the diff will be all new stuff :)
-new_stuff=$(diff "$result_file" "$last_file" | sed 's/^< //g' | sed '/^> /d' | sed -e '/^\w\w*,\w\w*$/d')
+#new_stuff=$(diff "$result_file" "$last_file" | sed 's/^< //g' | sed '/^> /d' | sed -e '/^\w\w*,\w\w*$/d')
 #new_stuff=$(diff "$result_file" "$last_file" | sed -e '/^\w\w*,\w\w*$/d')
 
 rm -f "$extracted_tmp"

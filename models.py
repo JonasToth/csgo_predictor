@@ -5,7 +5,7 @@ class Map (models.Model):
 	ratio	= models.FloatField()
 	
 	def __unicode__(self):
-		return name
+		return self.name
 
 
 class Team(models.Model):
@@ -13,7 +13,7 @@ class Team(models.Model):
 	nationality = models.CharField(max_length = 60, blank = True, null = True)
 	
 	def __unicode__(self):
-		return name
+		return self.name
 
 
 
@@ -25,4 +25,4 @@ class Match(models.Model):
 	date		= models.DateField(blank = True, null = True)
 	
 	def __unicode__(self):
-		return team1 + ":" + team2 + " " + score
+		return self.team1.name + ":" + self.team2.name + " " + self.score

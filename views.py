@@ -3,11 +3,11 @@ from django.views.generic import ListView
 
 from csgo_predictor.models import *
 
-from django.shortcuts import render, get_or_create
+from django.shortcuts import render
 from django.views.generic import ListView
 
 from datetime import datetime
-from time import strptime
+from time import strptime, mktime
 
 from django.http import HttpResponse
 
@@ -29,12 +29,6 @@ class TeamList(ListView):
 
 
 
-
-# Create your views here.
-class ChannelList(ListView):
-	model = Channel
-	
-	
 # fetch the data and write into the database
 def fetch(request):
 	# gets the data from hltv / matches (only the new ones, diff on .csv in the directory)
@@ -43,19 +37,38 @@ def fetch(request):
 	if DEBUG:
 		print csv_data
 	
+	response = HttpResponse()
 	
-	for line in csv_data:
-		time_, team1_, team2_, map_, result_ = unpack_csv(line)
+	response.write("<pre>" + csv_data + "</pre>")
+	
+	for line in csv_data.split('\n'):
+		#print line
+		try:
+			time_, team1_, team2_, map_, result_ = unpack_csv(line)
+		except ValueError:
+			continue
 	
 		# get references good for database
 		team1, created_team1 	= Team.objects.get_or_create(name = team1_)
 		team2, created_team2 	= Team.objects.get_or_create(name = team2_)
-		map,   created_map		= Map.objects.get_or_create(name = map_, default = { "ratio" : 0.5 })
-	
-		m = Match(...)
+		map,   created_map		= Map.objects.get_or_create(name = map_, defaults = { "ratio" : 0.5, })
+		time = datetime.fromtimestamp(mktime(time_))
+		
+		r = result_.split(':')
+		result = list()
+		result.append(int(r[0]))
+		result.append(int(r[1]))
+		
+		if DEBUG:
+			print time_
+			print team1
+			print team2
+			print map
+			print result
+			print time
+		
+		m = Match(team1 = team1, team2 = team2, map = map, date = time, score = result)
 		m.save()
-	
-		response+= str(m) + " added.\n"
 
 	return HttpResponse(response)
 		
@@ -63,7 +76,16 @@ def fetch(request):
 def unpack_csv(csv_data):
 	"""Helper function for fetch. It will parse the date from the api and
 	return python objects with the data"""
+	#print csv_data
+	
 	date_str, team1_str, team2_str, map_str, result_str = csv_data.split(',')
+	
+	if DEBUG:
+		print date_str
+		print team1_str
+		print team2_str
+		print map_str
+		print result_str
 	
 	return strptime(date_str, "%d.%m.%y"), team1_str, team2_str, map_str, result_str
 	
@@ -76,8 +98,8 @@ def fetch_data():
 		
 		p = check_output(['/bin/bash', os.path.join(dir, 'matches_hltv.sh')])
 		
-		if ",," not in p and "null" not in p:
-			return p
+		#print p
+		return p
 	
 	except subprocess.CalledProcessError as e:
 		if e.returncode == 1:
