@@ -13,4 +13,5 @@ from django.contrib.auth.decorators import login_required, permission_required
 
 urlpatterns = patterns('csgo_predictor.views',
 	url('^$', TeamList.as_view()),
+	url('^fetch/$', fetch),
 )
