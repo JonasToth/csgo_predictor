@@ -72,7 +72,7 @@ do
 	echo "$raw_html" > "$tmp_file"
 
 	# sed read the tmp_file and crop of all unneeded stuff
-	crop=$(sed -n -e '555,902p' < "$tmp_file")
+	crop=$(sed -n -e '618,962p' < "$tmp_file")
 
 	# get every not needed div out of there
 	# erase all tabulators
