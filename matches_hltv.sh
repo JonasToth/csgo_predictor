@@ -139,7 +139,7 @@ do
 		map=${map%% *}
 		
 		# is there real data?
-		if [ -z $day ]
+		if [ -z "$day" ]
 		then
 			continue
 		fi
