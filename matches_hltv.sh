@@ -42,7 +42,7 @@ base_url="http://www.hltv.org/?pageid=188&offset="
 # fetch the last 150 matches, this script should be called at least on a daily base
 # so this will cover all new matches
 data_offset=0
-max_offset=100
+max_offset=500
 
 
 # --------------------------------------------------------------------
@@ -177,12 +177,7 @@ done
 
 if [ -f "$last_file" ]
 then
-<<<<<<< HEAD
-	new_stuff=$(diff "$result_file" "$last_file" | sed 's/^< //g' | sed '/^> /d' | sed -e '/^\w\w*,\w\w*$/d'| sed -e '/^\w\w*$/d')
-	#new_stuff=$(diff "$result_file" "$last_file" | sed -e '/^\w\w*,\w\w*$/d')
-=======
 	new_stuff=$(diff "$result_file" "$last_file" | sed 's/^< //g' | sed '/^> /d' | sed -e '/^\w\w*,\w\w*$/d')
->>>>>>> better_fetching
 else
 	new_stuff=$(cat "$result_file")
 fi
