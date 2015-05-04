@@ -13,6 +13,30 @@ trim() {
 DEBUG=false
 base_url="http://csgolounge.com"
 
+
+##############################################
+# command line argument fetching 
+##############################################
+
+if [ "$DEBUG" = true ]
+then
+	echo "Parsing command line..."
+fi
+
+while [ -n "$1" ]
+do
+	if [ "$DEBUG" = true ]
+	then
+		echo "$1"
+	fi
+
+	[ "$1" = "--debug" ] && DEBUG=true && shift && continue
+
+done
+
+
+#################### command line end #######
+
 # get the html yeah
 raw_html=$(curl -s -X GET "${base_url}")
 #raw_html=$(cat 'csgolounge.html')
@@ -20,10 +44,10 @@ raw_html=$(curl -s -X GET "${base_url}")
 # strip everything out, only the match data is needed
 matches=$(echo "$raw_html" | sed -n -e '/id="bets"/,/<\/article>/p')
 
-#if [ "$DEBUG" = true ]
-#then
-##	echo "$matches"
-#fi
+if [ "$DEBUG" = true ]
+then
+	echo "$matches"
+fi
 
 # remove whitespace at beginning of line 
 crop_whitespace=$(echo "$matches" | sed -r -e 's/^(\s+)(.*)$/\2/g')
@@ -34,10 +58,10 @@ crop_whitespace=$(echo "$matches" | sed -r -e 's/^(\s+)(.*)$/\2/g')
 # if the bet is still available ( bla bla from now )
 # and if all values are given, no shit like faceit betting
 
-#if [ "$DEBUG" = true ]
-#then
-#	echo "$crop_whitespace"
-#fi
+if [ "$DEBUG" = true ]
+then
+	echo "$crop_whitespace"
+fi
 
 in_match=false
 bet_possible=false
@@ -155,6 +179,7 @@ do
 		########################################################################
 		if [ "$bet_possible" = true ] && [ -n "$team1" ] && [ -n "$team2" ] && [ -n "$league" ] && [ -n "$score1" ] && [ -n "$score2" ] && [ -n "$match_id" ] && [ -n "$time" ]
 		then
+			# this will give csv output
 			trim "$team1"
 			echo -n ","
 			trim "$team2"
@@ -169,7 +194,7 @@ do
 			echo -n ","
 			trim "$match_id"
 			echo
-			#echo "$team1,$team2,$score1, $score2,$league,$time,$match_id"
+			
 			in_match=false
 			continue
 		fi
