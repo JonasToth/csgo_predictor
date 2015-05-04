@@ -10,35 +10,44 @@ trim() {
     echo -n "$var"
 }
 
-debug=true
+DEBUG=true
 base_url="http://csgolounge.com"
 
 # get the html yeah
 raw_html=$(curl -s -X GET "${base_url}")
 
 # strip everything out, only the match data is needed
-matches=$(echo "$raw_html" | sed -e '1,/<article class="standard" id="bets"/d' | sed -e '/<\/article>/,$d')
+matches=$(echo "$raw_html" | sed -n -e '/id="bets"/,/<\/article>/p')
 
-# debugging output
-#echo "$matches"
-#exit 0
-# strip html to get the raw data, and analyze that
-strip_span=$(echo "$matches" | sed -r -e 's/<span[^>]*>.*<\/span>//g')
-strip_html=$(echo "$strip_span" | sed -e 's/<[^>]*>//g')
+if [ "$DEBUG" = true ]
+then
+	echo "$matches"
+fi
 
+# remove whitespace at beginning of line 
+crop_whitespace=$(echo "$matches" | sed -r -e 's/^(\s+)(.*)$/\2/g')
+
+# remove all unused tags, like end tags which are on single lines and so on
+crop_tags=$(echo "$crop_whitespace") #| sed -e 's/<[^>]*>//g')
+
+if [ "$DEBUG" = true ]
+then
+	echo "$crop_tags" 
+fi
+exit 0
 # strip whitespaces, strip delete "vs" line
-strip_whitespace=$(echo "$strip_html" | sed -r -e 's/^\s+//g' | sed -r -e '/^\s*$/d' | sed -e '/vs/d')
+strip_whitespace=$(echo "$crop_tags" | sed -r -e 's/^\s+//g' | sed -r -e '/^\s*$/d' | sed -e '/vs/d')
 # debugging output
-#echo "$strip_whitespace"
-#exit 0
+if [ "$DEBUG" = true ]
+then
+	echo "$strip_whitespace"
+fi
+
 # process the bets
 # output til here is something like this:
-# 2 hours ago LIVE
-# 
 #EML
 #XPC40%
 #neXtP60%
-#
 #12 hours from now  
 #RGN Tournament
 #TMP42%
@@ -52,12 +61,6 @@ strip_whitespace=$(echo "$strip_html" | sed -r -e 's/^\s+//g' | sed -r -e '/^\s*
 #echo "$one_lined"
 
 counter=0
-#league=""
-#time=""
-#team1=""
-#team2=""
-#val1=0
-#val2=0
 
 #array=( "$strip_whitespace" )
 
