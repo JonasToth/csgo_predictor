@@ -72,7 +72,7 @@ do
 	echo "$raw_html" > "$tmp_file"
 
 	# sed read the tmp_file and crop of all unneeded stuff
-	crop=$(sed -n -e '617,962p' < "$tmp_file")
+	crop=$(sed -n -e '618,962p' < "$tmp_file")
 
 	# get every not needed div out of there
 	# erase all tabulators
@@ -159,10 +159,10 @@ done
 
 if [ -n "$last_file" ]
 then
-	new_stuff=$(diff "$result_file" "$last_file" | sed 's/^< //g' | sed '/^> /d' | sed -e '/^\w\w*,\w\w*$/d')
+	new_stuff=$(diff "$result_file" "$last_file" | sed 's/^< //g' | sed '/^> /d' | sed -e '/^\w\w*,\w\w*$/d'| sed -e '/^\w\w*$/d')
 	#new_stuff=$(diff "$result_file" "$last_file" | sed -e '/^\w\w*,\w\w*$/d')
 else
-	echo $(cat "$result_file")
+	new_stuff=$(cat "$result_file")
 fi
 
 rm -f "$extracted_tmp"

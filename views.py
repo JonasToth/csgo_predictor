@@ -46,6 +46,7 @@ def fetch(request):
 		try:
 			time_, team1_, team2_, map_, result_ = unpack_csv(line)
 		except ValueError:
+			response.write("<p>Could not unpack csv for line</p><pre>" + line + "</pre>")
 			continue
 	
 		# get references good for database
@@ -98,7 +99,7 @@ def fetch_data():
 		
 		p = check_output(['/bin/bash', os.path.join(dir, 'matches_hltv.sh')])
 		
-		#print p
+		print p
 		return p
 	
 	except subprocess.CalledProcessError as e:
