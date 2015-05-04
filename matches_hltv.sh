@@ -42,7 +42,7 @@ base_url="http://www.hltv.org/?pageid=188&offset="
 # fetch the last 150 matches, this script should be called at least on a daily base
 # so this will cover all new matches
 data_offset=0
-max_offset=500
+max_offset=100
 
 
 # --------------------------------------------------------------------
