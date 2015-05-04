@@ -21,6 +21,21 @@ usage() {
 # this script will aggregate data from http://www.hltv.org/?pageid=188&gameid=2
 # parse it and print it on stdout as csv
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+last_file="$DIR/last.csv"
+
+# checking if u can save the current fetch for a diff call on next fetch
+if [ ! -f "$last_file" ]
+then
+	t=$(touch "$last_file")
+
+	# could not create the file for saving the last fetched data
+	if [ -n "$t" ]
+	then
+		echo "Could not create file for saving last data!"
+		exit 1
+	fi
+fi
+
 DEBUG=false
 
 base_url="http://www.hltv.org/?pageid=188&offset="
@@ -55,18 +70,21 @@ done
 
 
 # class="covMainBoxContent" is the parent container for the relevant data
-# start in line 635
-# end in line 981
-
 # save the result in tmp directory for further processing
+# the result is from the current fetch. this will then be copied to a local file
+# for comparison
 result_file="/tmp/data_fetch_hltv.csv"
+
+# clear the result file, otherwise it gets a big mess on bad circumstances
+$(rm -f "$result_file")
 
 while [ "$data_offset" -le "$max_offset" ]
 do
 	raw_html=$(curl -s -X GET "${base_url}${data_offset}")
 
 	# sed read the tmp_file and crop of all unneeded stuff
-	crop=$(echo "$raw_html" | sed -n -e '617,962p')
+	crop=$(echo "$raw_html" | sed -e '0,/http:\/\/static.hltv.org\/\/images\/dots.gif/d')
+	crop=$(echo "$crop"		| sed -e '/class="covMainBox covMainBoxFooter"/,$d')
 	
 	if [ "$DEBUG" = true ]
 	then
@@ -74,9 +92,6 @@ do
 		echo 
 	fi
 
-	# get every not needed div out of there
-	# erase all tabulators
-	#clear_divs=$(echo "$crop" | sed -e '{/<div style="clear:both\;"><\/div>/d;/<div style="width:606px\;height:22px\;background-color:white">/d;/<div style="padding-left:5px\;padding-top:5px\;">/d;/<div style="clear:both\;height:2px\;"><\/div>/d;/<div style="width:606px\;height:22px\;background-color:#E6E5E5">/d;/<\/div>.$/d;s/\t//g;}')
 
 	clear_tags=$(echo "$crop" | sed -e 's/<[^>]*>//g')
 	if [ "$DEBUG" = true ]
@@ -96,7 +111,7 @@ do
 		echo "$clear_whitespace"
 		echo
 	fi
-
+	
 	while IFS= read -r line
 	do
 		if [ "$DEBUG" = true ]
@@ -122,14 +137,6 @@ do
 		# 2 mal alles vor leerzeichen und leerzeichen links loeschen
 		match_data=${line#* }
 		match_data=${match_data#* }
-		#match_data=${match_data%
-	
-		#echo "$match_data"
-	
-		# sed -e 's@name1 (runden1) name2 (runden2)map <liga>@name1;name2;map;runden1:runden2@')
-		#csv=$(echo "$match_data" | sed -e 's/\([a-zA-Z0-9.][a-zA-Z0-9. ]*\) \([:digit:][:digit:]*\) \([a-zA-Z0-9.][a-zA-Z0-9.]*\) \([:digit:][:digit:]*\)\([a-zA-Z0-9.][a-zA-Z0-9.]*\) *$/\1;\3;\5;\2:\4/')
-	
-		#echo "$csv"
 	
 		# delete all to right side after space and brace
 		team1=${match_data%% (*}
@@ -168,14 +175,15 @@ done
 # print out the diff
 # the diff will be all new stuff :)
 
-if [ -n "$last_file" ]
+if [ -f "$last_file" ]
 then
 	new_stuff=$(diff "$result_file" "$last_file" | sed 's/^< //g' | sed '/^> /d' | sed -e '/^\w\w*,\w\w*$/d')
 else
 	new_stuff=$(cat "$result_file")
 fi
 
+# copy the result file to last.csv file
+$(cp "$result_file" "$last_file")
 echo "$new_stuff"
 
 exit 0
-
