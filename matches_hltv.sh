@@ -29,11 +29,6 @@ base_url="http://www.hltv.org/?pageid=188&offset="
 data_offset=0
 max_offset=100
 
-current_date=$(date +%s)
-# list file line by line
-last_file=$(ls -1 *.csv)
-result_file="$DIR/hltv_$current_date.csv"
-new_matches_file="$DIR/new_matches_$current_date.csv"
 
 # --------------------------------------------------------------------
 
@@ -63,34 +58,51 @@ done
 # start in line 635
 # end in line 981
 
+# save the result in tmp directory for further processing
+result_file="/tmp/data_fetch_hltv.csv"
+
 while [ "$data_offset" -le "$max_offset" ]
 do
 	raw_html=$(curl -s -X GET "${base_url}${data_offset}")
-	tmp_file="$DIR/tmp_raw.txt"
-
-	# temporary file for sed 
-	echo "$raw_html" > "$tmp_file"
 
 	# sed read the tmp_file and crop of all unneeded stuff
-	crop=$(sed -n -e '617,962p' < "$tmp_file")
+	crop=$(echo "$raw_html" | sed -n -e '617,962p')
+	
+	if [ "$DEBUG" = true ]
+	then
+		echo "$crop"
+		echo 
+	fi
 
 	# get every not needed div out of there
 	# erase all tabulators
 	#clear_divs=$(echo "$crop" | sed -e '{/<div style="clear:both\;"><\/div>/d;/<div style="width:606px\;height:22px\;background-color:white">/d;/<div style="padding-left:5px\;padding-top:5px\;">/d;/<div style="clear:both\;height:2px\;"><\/div>/d;/<div style="width:606px\;height:22px\;background-color:#E6E5E5">/d;/<\/div>.$/d;s/\t//g;}')
 
 	clear_tags=$(echo "$crop" | sed -e 's/<[^>]*>//g')
-	#echo "$clear_tags"
+	if [ "$DEBUG" = true ]
+	then
+		echo "$clear_tags"
+		echo 
+	fi
 	# remove tabs
 	# show only lines with a number (no empty lines)
+	# numbers have to be in the result lines!
 	clear_whitespace=$(echo "$clear_tags" | sed -e 's/\t//g' | sed -n -e '/[0-9]/p')
+	
+	# from here on the data is in prepared for processing
+	raw_data="$clear_whitespace"
+	if [ "$DEBUG" = true ]
+	then
+		echo "$clear_whitespace"
+		echo
+	fi
 
-	extracted_tmp="$DIR/tmp_extracted.txt"
-	#echo "$clear_whitespace"
-	echo "$clear_whitespace" > "$extracted_tmp"
-
-	while read line
+	while IFS= read -r line
 	do
-		#echo "$line"
+		if [ "$DEBUG" = true ]
+		then
+			echo "$line"
+		fi
 		# bsp: 6/4 15 fnatic (6) Virtus.pro (16)mirage FACEIT League 2015
 
 		# rechts abschneiden nach slash
@@ -147,12 +159,11 @@ do
 		#echo "$test"
 		# csv from the data my friend
 		echo "$day"."$month"."$year","$team1","$team2","$map","$score1":"$score2" >> "$result_file"
-	done < "$extracted_tmp"
+	done <<< "$raw_data"
 	
 	(( data_offset = data_offset + 50))
 done
 
-#cat "$result_file"
 # do a diff on the new file with an old one
 # print out the diff
 # the diff will be all new stuff :)
@@ -160,16 +171,10 @@ done
 if [ -n "$last_file" ]
 then
 	new_stuff=$(diff "$result_file" "$last_file" | sed 's/^< //g' | sed '/^> /d' | sed -e '/^\w\w*,\w\w*$/d')
-	#new_stuff=$(diff "$result_file" "$last_file" | sed -e '/^\w\w*,\w\w*$/d')
 else
-	echo $(cat "$result_file")
+	new_stuff=$(cat "$result_file")
 fi
 
-rm -f "$extracted_tmp"
-rm -f "$tmp_file"
-rm -f "$last_file"
-
-#echo "$new_stuff" > "$new_matches_file"
 echo "$new_stuff"
 
 exit 0
