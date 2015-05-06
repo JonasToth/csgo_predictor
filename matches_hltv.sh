@@ -21,7 +21,7 @@ usage() {
 # this script will aggregate data from http://www.hltv.org/?pageid=188&gameid=2
 # parse it and print it on stdout as csv
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-DEBUG=false
+DEBUG=true
 
 base_url="http://www.hltv.org/?pageid=188&offset="
 # fetch the last 150 matches, this script should be called at least on a daily base
