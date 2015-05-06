@@ -10,150 +10,196 @@ trim() {
     echo -n "$var"
 }
 
-debug=true
+DEBUG=false
 base_url="http://csgolounge.com"
+
+
+##############################################
+# command line argument fetching 
+##############################################
+
+if [ "$DEBUG" = true ]
+then
+	echo "Parsing command line..."
+fi
+
+while [ -n "$1" ]
+do
+	if [ "$DEBUG" = true ]
+	then
+		echo "$1"
+	fi
+
+	[ "$1" = "--debug" ] && DEBUG=true && shift && continue
+
+done
+
+
+#################### command line end #######
 
 # get the html yeah
 raw_html=$(curl -s -X GET "${base_url}")
+#raw_html=$(cat 'csgolounge.html')
 
 # strip everything out, only the match data is needed
-matches=$(echo "$raw_html" | sed -e '1,/<article class="standard" id="bets"/d' | sed -e '/<\/article>/,$d')
+matches=$(echo "$raw_html" | sed -n -e '/id="bets"/,/<\/article>/p')
 
-# debugging output
-#echo "$matches"
-#exit 0
-# strip html to get the raw data, and analyze that
-strip_span=$(echo "$matches" | sed -r -e 's/<span[^>]*>.*<\/span>//g')
-strip_html=$(echo "$strip_span" | sed -e 's/<[^>]*>//g')
+if [ "$DEBUG" = true ]
+then
+	echo "$matches"
+fi
 
-# strip whitespaces, strip delete "vs" line
-strip_whitespace=$(echo "$strip_html" | sed -r -e 's/^\s+//g' | sed -r -e '/^\s*$/d' | sed -e '/vs/d')
-# debugging output
-#echo "$strip_whitespace"
-#exit 0
-# process the bets
-# output til here is something like this:
-# 2 hours ago LIVE
-# 
-#EML
-#XPC40%
-#neXtP60%
-#
-#12 hours from now  
-#RGN Tournament
-#TMP42%
-#Winout58%
+# remove whitespace at beginning of line 
+crop_whitespace=$(echo "$matches" | sed -r -e 's/^(\s+)(.*)$/\2/g')
 
-#exit 0
-# put the stuff into one line
-#one_lined=$(echo "$strip_whitespace" | sed -n -r -e 's/^([\w ]+)$^([\w ]+)$^([\w ]+)(\d+)\%$^([\w ]+)(\d+)\%$/\1,\2,\3,\4,\5,\6/p')
-#testing=$(echo "$strip_whitespace" | sed -r -e 's/(^.*$)(^.*)/\1,\2/g')
+# start from here my friend
+# go throught the output line by line and parse the html for information
+# u can get the match and some other variables and give them to output
+# if the bet is still available ( bla bla from now )
+# and if all values are given, no shit like faceit betting
 
-#echo "$one_lined"
+if [ "$DEBUG" = true ]
+then
+	echo "$crop_whitespace"
+fi
 
-counter=0
-#league=""
-#time=""
-#team1=""
-#team2=""
-#val1=0
-#val2=0
+in_match=false
+bet_possible=false
+match_id=0
+league=""
+team1=""
+score1=""
+team2=""
+score2=""
+time=""
 
-#array=( "$strip_whitespace" )
-
-while read line
+while IFS= read -r line
 do
-	if [ "$debug" = true ]
+	# from here u start to get the information
+	# if u are outside of this field its just bullshit
+	# it will reset all data (see above the loop)
+	if [[ "$line" == *"class=\"matchmain\""* ]]
 	then
-		echo Counter: "$counter"
-		echo The Line: "$line"
+		if [ "$DEBUG" = true ]
+		then
+			echo "Start match"
+		fi
+		in_match=true
+		bet_possible=false
+		match_id=0
+		league=""
+		team1=""
+		team2=""
+		score1=""
+		score2=""
+		time=""
+		continue
 	fi
-	
-	# its a time line
-	# set the counter to the correct value, so the script doesnt mess up completly if something changes slidly?
-	if [ "$line" == *"now"* ] || [ "$line" == *"ago"* ]
+	# parse further or ignore it
+	if [ "$in_match" = true ]
 	then
-		(( counter=0 ))
-	fi
+		###############################################################################
+		# find the time
+		##############################################################################
+		if [[ "$line" == *"class=\"whenm\""* ]]
+		then
+			time=$(echo "$line" | sed -e 's/<[^>]*>//g')
+			if [ "$DEBUG" = true ]
+			then
+				echo "Found time: $time"
+			fi
+			if [[ "$time" == *"ago"* ]]
+			then
+				bet_possible=false
+			else
+				bet_possible=true
+			fi
+			continue
+		fi
 
-	if [ "$counter" -eq 0 ]
-	then
-		time="$line"
-		#echo -n "$time",
-		if [ "$debug" = true ]
+		##############################################################################
+		# find the match id TODO
+		#############################################################################
+		if [[ "$line" == *"<a href=\"match?m="* ]]
 		then
-			echo "$time"
-		fi
-	
-	elif [ "$counter" -eq 1 ]
-	then
-		league="$line"
-		#echo -n "$league",
-		if [ "$debug" = true ]
-		then
-			echo "$league"
-		fi
-	
-	elif [ "$counter" -eq 2 ]
-	then
-		csv=$(echo "$line" | sed -r -e 's/([a-zA-Z\.!\?_'\'']+)(.*)%/\1;\2/g')
-		team1=${csv%%;*} # cut right
-		val1=${csv##*;}  # cut left
-		#echo -n "$team1,$val1",
-		if [ "$debug" = true ]
-		then
-			echo csv: "$csv"
-			echo team1: "$team1" 
-			echo val1: "$val1"
-			
-			echo testvars "$team2"
-			echo testvars "$val2"
-		fi
-	
-	elif [ "$counter" -eq 3 ]
-	then
-		csv=$(echo "$line" | sed -r -e 's/([a-zA-Z\.!\?_'\'']+)(.*)%/\1;\2/g')
-		team2=${csv%%;*} # cut right
-		val2=${csv##*;}  # cut left
-		#echo -n "$team2,$val2"
+			match_id=$(echo "$line" | sed -r -e 's/.*m=([[:digit:]]+)".*/\1/g')
 
-		if [ "$debug" = true ]
+			if [ "$DEBUG" = true ]
+			then
+				echo "Found match_id $match_id"
+			fi
+			continue
+		fi
+
+		##############################################################################
+		# find league or event
+		##############################################################################
+		if [[ "$line" == *"class=\"eventm\""* ]]
 		then
-			echo csv: "$csv"
-			echo team2: "$team2"
-			echo val2: "$val2"
-		
+			league=$(echo "$line" | sed -e 's/<[^>]*>//g')
+
+			if [ "$DEBUG" = true ]
+			then
+				echo "Found league $league"
+			fi
+			continue
+		fi
+
+		#############################################################################
+		# get the first team, this is only executed if the variables are empty
+		# u cant distinguish between the two teams by html, so fill them one after 
+		# another
+		#############################################################################
+		if [[ "$line" == *"class=\"teamtext\""* ]] && [[ -z "$team1" ]]
+		then
+			team1=$(echo "$line" | sed -r -e 's/.*<b>([^<]+)<\/b>.*/\1/g')
+			score1=$(echo "$line" | sed -r -e 's/.*<i>([[:digit:]]+)%<\/i>.*/\1/g')
+
+			if [ "$DEBUG" = true ]
+			then
+				echo "Found team1 $team1 with predict of $score1"
+			fi
+			continue
+
+		elif [[ "$line" == *"class=\"teamtext\""* ]] && [[ -n "$team1" ]]
+		then
+			team2=$(echo "$line" | sed -r -e 's/.*<b>([^<]+)<\/b>.*/\1/g')
+			score2=$(echo "$line" | sed -r -e 's/.*<i>([[:digit:]]+)%<\/i>.*/\1/g')
+
+			if [ "$DEBUG" = true ]
+			then
+				echo "Found team2 $team2 with predict of $score2"
+			fi 
+			continue
+		fi
+
+
+		#########################################################################
+		# check if iam finished with parsing and can output the data i found
+		########################################################################
+		if [ "$bet_possible" = true ] && [ -n "$team1" ] && [ -n "$team2" ] && [ -n "$league" ] && [ -n "$score1" ] && [ -n "$score2" ] && [ -n "$match_id" ] && [ -n "$time" ]
+		then
+			# this will give csv output
+			trim "$team1"
+			echo -n ","
+			trim "$team2"
+			echo -n ","
+			trim "$score1"
+			echo -n ","
+			trim "$score2"
+			echo -n ","
+			trim "$league"
+			echo -n ","
+			trim "$time"
+			echo -n ","
+			trim "$match_id"
 			echo
+			
+			in_match=false
+			continue
 		fi
-		# print as csv
-		
-		#echo "==$league=="
-		#echo "==$time=="
-		#echo "==$team1=="
-		#echo "==$team2=="
-		#echo "==$val1=="
-		#echo "==$val2=="
-		
-		trim $league
-		echo -n ","
-		trim $time
-		echo -n ","
-		trim $team1
-		echo -n ","
-		trim $team2
-		echo -n ","
-		trim $val1
-		echo -n ","
-		trim $val2
-		echo
-		
-		#printf "%s %s %s %s %s %s\n" "$league" "$time" "$team1" "$team2" "$val1" "$val2"
-		#csv_line="$league,$time,$team1,$team2,$val1,$val2"
-		#echo "$csv_line"
-	else
-		echo "FEHLER MY FRIEND"
-		exit 2
 	fi
-	(( counter+=1 ))
-	counter=$(( $counter % 4 ))
-done <<< "$strip_whitespace"
+
+done <<< "$crop_whitespace"
+
+exit 0
